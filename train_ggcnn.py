@@ -98,13 +98,13 @@ def validate(net, device, val_data, batches_per_epoch):
 
                 q_out, ang_out, w_out = post_process_output(lossd['pred']['pos'], lossd['pred']['cos'],
                                                             lossd['pred']['sin'], lossd['pred']['width'])
-
+                print("shahao_vali",batch_idx)
                 s = evaluation.calculate_iou_match(q_out, ang_out,
                                                    val_data.dataset.get_gtbb(didx, rot, zoom_factor),
                                                    no_grasps=1,
                                                    grasp_width=w_out,
                                                    )
-
+                print("shahao_vali_finish",batch_idx)
                 if s:
                     results['correct'] += 1
                 else:

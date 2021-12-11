@@ -103,8 +103,10 @@ class GraspRectangles:
                 x, y, theta, w, h = [float(v) for v in l[:-1].split(';')]
                 # index based on row, column (y,x), and the Jacquard dataset's angles are flipped around an axis.
                 grs.append(Grasp(np.array([y, x]), -theta/180.0*np.pi, w, h).as_gr)
+        
         grs = cls(grs)
         grs.scale(scale)
+        
         return grs
 
     def append(self, gr):
@@ -169,6 +171,23 @@ class GraspRectangles:
                 ang_out[rr, cc] = gr.angle
             if width:
                 width_out[rr, cc] = gr.length
+            # plt.savefig("/home/shahao/Project/pos_out.png")
+        # for gr in self.grs:
+        #     rr, cc = gr.compact_polygon_coords(shape)
+        #     gr_center = gr.center
+        #     if gr_center[0] <0 or gr_center[1] <0 or gr_center[0] >=300 or gr_center[1] >=300:
+        #         print("wrong center")
+        #         continue  
+        #     # print("yaoshiqi",gr_center)
+        #     if position:
+        #         # pos_out[rr, cc] = 1.0
+        #         pos_out[gr_center[0],gr_center[1]]=1.0
+        #     if angle:
+        #         # ang_out[rr, cc] = gr.angle
+        #         pos_out[gr_center[0],gr_center[1]]= gr.angle
+        #     if width:
+        #         # width_out[rr, cc] = gr.length
+        #         pos_out[gr_center[0],gr_center[1]]= gr.length        
 
         return pos_out, ang_out, width_out
 

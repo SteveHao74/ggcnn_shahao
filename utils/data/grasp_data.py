@@ -10,7 +10,7 @@ class GraspDatasetBase(torch.utils.data.Dataset):
     """
     An abstract dataset for training GG-CNNs in a common format.
     """
-    def __init__(self, output_size=300, include_depth=True, include_rgb=False, random_rotate=False,
+    def __init__(self,input_size=1024, output_size=300, include_depth=True, include_rgb=False, random_rotate=False,
                  random_zoom=False, input_only=False):
         """
         :param output_size: Image output size in pixels (square)
@@ -20,6 +20,7 @@ class GraspDatasetBase(torch.utils.data.Dataset):
         :param random_zoom: Whether random zooms are applied
         :param input_only: Whether to return only the network input (no labels)
         """
+        self.input_size = input_size
         self.output_size = output_size
         self.random_rotate = random_rotate
         self.random_zoom = random_zoom

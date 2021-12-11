@@ -19,16 +19,31 @@ from models import get_network
 from train_ggcnn import train, validate
 from tqdm import tqdm
 
+
+# GMDATA_PATH = Path.home().joinpath('Project/gmdata')
+# DATASET_PATH = GMDATA_PATH.joinpath('datasets/train_datasets')
+# INPUT_DATA_PATH = DATASET_PATH.joinpath('gg_data/small_data')#gg_data/shahao_data
+# OUT_PATH = GMDATA_PATH.joinpath('datasets/models/gg2/shahao_model')
+
+
+INPUT_DATA_PATH = "/media/shahao/F07EE98F7EE94F42/win_stevehao/Research/gmd/shahao_data/gq_generate_gg"#gg_data/gmd
+OUT_PATH = Path.home().joinpath('Project/model/gg2')
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train GG-CNN')
 
     # Network
-    parser.add_argument('--network', type=str, default='ggcnn', help='Network Name in .models')
+    parser.add_argument('--network', type=str, default='ggcnn2', help='Network Name in .models')
 
     # Dataset & Data & Training
-    parser.add_argument('--dataset', type=str, default='jaq',
-                        help='Dataset Name ("cornell" or "jaquard")')
-    parser.add_argument('--dataset-path', type=str, default='', help='Path to dataset')
+    parser.add_argument('--input-size', type=int, default=300,
+                        help='Input image size for the network')
+    parser.add_argument('--output-size', type=int, default=300,
+                        help='output image size for the network')
+    parser.add_argument('--dataset', type=str, default='jacquard',
+                        help='Dataset Name ("cornell" or "jacquard")')
+    parser.add_argument('--dataset-path', type=str, default=INPUT_DATA_PATH, help='Path to dataset')
     parser.add_argument('--use-depth', type=int, default=1,
                         help='Use Depth image for training (1/0)')
     parser.add_argument('--use-rgb', type=int, default=0, help='Use RGB image for training (0/1)')
@@ -40,11 +55,11 @@ def parse_args():
 
     parser.add_argument('--batch-size', type=int, default=8, help='Batch size')#8
     parser.add_argument('--epochs', type=int, default=50, help='Training epochs')
-    parser.add_argument('--batches-per-epoch', type=int, default=3986, help='Batches per Epoch')
-    parser.add_argument('--val-batches', type=int, default=250, help='Validation Batches')
+    parser.add_argument('--batches-per-epoch', type=int, default=1283, help='Batches per Epoch')
+    parser.add_argument('--val-batches', type=int, default=100, help='Validation Batches')
 
     # Logging etc.
-    parser.add_argument('--description', type=str, default='', help='Training description')
+    parser.add_argument('--description', type=str, default='single_gmd', help='Training description')
     parser.add_argument('--vis', action='store_true', help='Visualise the training process')
 
     args = parser.parse_args()
@@ -59,6 +74,8 @@ def run(args, save_folder, log_folder):
     Dataset = get_dataset(args.dataset)
 
     train_dataset = Dataset(args.dataset_path, start=0.0, end=args.split, ds_rotate=args.ds_rotate,
+                            input_size=args.input_size, 
+                            output_size=args.output_size,
                             random_rotate=True, random_zoom=True,
                             include_depth=args.use_depth, include_rgb=args.use_rgb)
     train_data = torch.utils.data.DataLoader(
@@ -130,40 +147,33 @@ def run(args, save_folder, log_folder):
             best_iou = iou
 
 
-GMDATA_PATH = Path.home().joinpath('Project/gmdata')
-DATASET_PATH = GMDATA_PATH.joinpath('datasets/train_datasets')
-INPUT_DATA_PATH = DATASET_PATH.joinpath('gg_data/small_data')#gg_data/shahao_data
-OUT_PATH = GMDATA_PATH.joinpath('datasets/models/gg2/shahao_model')
 
 
 def main():
     print("shahao")
     args = parse_args()
     args.network = 'ggcnn2'
-    args.epochs = 100
-    args.batch_size = 8
-    for t in 'gmd jaq cor'.split():
-        if t == 'cor':
-            args.dataset = 'cornell'
-            args.batches_per_epoch = 562 
-        elif t == 'jaq':
-            continue
-            args.dataset = 'jacquard'
-            args.batches_per_epoch = 1162
-        elif t == 'gmd':
-            continue
-            args.dataset = 'gmd'
-            args.batches_per_epoch = 1440
+    # for t in 'gmd jaq cor'.split():
+    #     if t == 'cor':
+    #         args.dataset = 'cornell'
+    #         args.batches_per_epoch = 562 
+    #     elif t == 'jaq':
+    #         continue
+    #         args.dataset = 'jacquard'
+    #         args.batches_per_epoch = 1162
+    #     elif t == 'gmd':
+    #         continue
+    #         args.dataset = 'gmd'
+    #         args.batches_per_epoch = 1440
     # args.dataset= 'gmd'
-        args.description = 'train %s' % (t)
-        args.dataset_path = INPUT_DATA_PATH.joinpath(t).as_posix()
-        save_folder = OUT_PATH.joinpath(t)
-        log_folder = OUT_PATH.joinpath(t).joinpath('logs')
-        if save_folder.exists():
-            shutil.rmtree(save_folder)
-        log_folder.mkdir(parents=True)
-        print(t,args)
-        run(args, save_folder.as_posix(), log_folder.as_posix())
+    # args.description = 'train %s' % (t)
+    # args.dataset_path = INPUT_DATA_PATH.joinpath().as_posix()
+    save_folder = OUT_PATH.joinpath(args.description)
+    log_folder = OUT_PATH.joinpath(args.description).joinpath('logs')
+    if save_folder.exists():
+        shutil.rmtree(save_folder)
+    log_folder.mkdir(parents=True)
+    run(args, save_folder.as_posix(), log_folder.as_posix())
 
 
 if __name__ == '__main__':
