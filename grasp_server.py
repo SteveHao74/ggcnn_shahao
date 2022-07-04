@@ -12,7 +12,7 @@ from pathlib import Path
 from ggcnn_torch import GGCNNTorch
 from utils.dataset_processing.grasp import detect_grasps
 
-MODEL_PATH = Path.home().joinpath('Project/gmdata/datasets/models/gg2/shahao_model')#('/Project/gmdata/datasets/models/gg/shahao_data')#('Project/shahao_ggcnn/shahao_data')
+MODEL_PATH = Path.home().joinpath('Project/shahao_ggcnn/output/models')#trained-models#shahao_models
 #MODEL_PATH = GMDATA_PATH.joinpath('')
 #TEST_PATH = GMDATA_PATH.joinpath('datasets/test/test_poses')
 #TEST_OUTPUT = GMDATA_PATH.joinpath('ggtest')
@@ -118,18 +118,34 @@ def get_model(model_path):
 class Planer(object):
     def __init__(self, model_path):
         self.ggcnn = GGCNNTorch(model_path)
-        # self.model_name=model_path.split("/")[-1]#从路径中剪切出模型名并发送给客户端
+        self.model_name=str(model_path).split("/")[-2]#从路径中剪切出模型名并发送给客户端
 
     def plan(self, image, width):
         random.seed(0)
         np.random.seed(0)
-        im = image.copy()
+        image_r = image.copy()
+
+        if self.model_name == 'cor' :#or self.model_name ==  "cornell-randsplit-rgbd-grconvnet3-drop1-ch32":
+            normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.32395524 *0.1#+1.1981683*np.ones(image_r.shape)
+        elif self.model_name == "gmd"  or self.model_name == "tense_gmd"  :# or 'single_gmd' :
+            normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.005129744*0.1 #*0.1 #+0.69948566*np.ones(image_r.shape)
+            # normalize_depth=image_r
+            # normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.015 #+1.5*np.ones(image_r.shape) 
+        elif self.model_name == 'tense_gmd':
+            normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.00478371
+        elif self.model_name == 'jaq' or self.model_name ==  "jacquard-d-grconvnet3-drop0-ch32":
+            normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.04099764*0.1 #+1.5008891*np.ones(image_r.shape)    
+            # normalize_depth = (image_r-np.mean(image_r)*np.ones(image_r.shape))/np.std(image_r)  * 0.015# +1.5*np.ones(image_r.shape)   
+        else:
+            normalize_depth = image_r
+
+        normalize_depth=np.clip((normalize_depth - normalize_depth.mean()), -1, 1).astype(np.float32)
         try_num = 5
         qs = []
         gs = []
         for _ in range(try_num):
             try:
-                points_out, ang_out, width_out, depth_out = self.ggcnn.predict(im, 300)
+                points_out, ang_out, width_out, depth_out = self.ggcnn.predict(normalize_depth, 300)
                 ggs = detect_grasps(points_out, ang_out, width_img=width_out, no_grasps=1)#这里得到了一系列候选抓取
                 if len(ggs) == 0:
                     print("detect_grasps——error")
@@ -148,7 +164,8 @@ class Planer(object):
                 # if q > 0.9:
                 #     break
         if len(gs) == 0:
-            return None
+            return [None, None, None,None,None,points_out]
+            # return None
         g = gs[np.argmax(qs)]#取得是抓取质量最高的抓取
         q = qs[np.argmax(qs)]
         print("width",width)
@@ -159,11 +176,11 @@ class Planer(object):
         print("real_width",np.linalg.norm(p1-p0))
         print('-------------------------')
         print([p0, p1, g.depth, g.depth, q])
-        plt.clf()
-        plt.imshow(points_out)
-        plt.colorbar()
-        plt.savefig("predict_result.png")
-        return [p0, p1, g.depth, g.depth, q]#[0, 0, 0,0, 0,points_out]#
+        # plt.clf()
+        # plt.imshow(points_out)
+        # plt.colorbar()
+        # plt.savefig("predict_result.png")
+        return [p0, p1, g.depth, g.depth, q,points_out]#[0, 0, 0,0, 0,points_out]#
 
 
 def main(args):
@@ -203,7 +220,7 @@ def test():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='dataset to npz')
-    parser.add_argument('-m', '--model-name', metavar='gmd', type=str, default='gmd',
+    parser.add_argument('-m', '--model-name', metavar='gmd', type=str, default='jaq',
                         help='使用的模型的名字')
     parser.add_argument('-t', '--test', action='store_true')
     args = parser.parse_args()
